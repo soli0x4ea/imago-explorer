@@ -1,4 +1,6 @@
-> 🎒 **TRAE 专用包下载**：[v1.0.0-trae (tarot-diviner.zip)](https://github.com/soli0x4ea/imago-explorer/releases/download/v1.0.0-trae/tarot-diviner.zip) — 解压即用，导入 TRAE 平台直接体验
+## 🎒 TRAE 专用包下载
+
+[v1.0.0-trae (tarot-diviner.zip)](https://github.com/soli0x4ea/imago-explorer/releases/download/v1.0.0-trae/tarot-diviner.zip) — 解压即用，导入 TRAE 平台直接体验
 
 # Imago Explorer — 意象探索者
 
