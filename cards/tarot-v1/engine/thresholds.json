@@ -77,7 +77,7 @@
       "operator": ">=",
       "value": 3,
       "cooldown_ticks": 20,
-      "event_id": "event_spread_complete",
+      "event_id": "cmd_spread_complete",
       "event_type": "info"
     },
     "thr_all_reversed": {

@@ -49,8 +49,7 @@
       },
       "flags": {
         "is_shuffled": false,
-        "is_spread_complete": false,
-        "deck_state": "unshuffled"
+        "is_spread_complete": false
       }
     }
   }

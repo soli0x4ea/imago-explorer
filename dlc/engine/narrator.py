@@ -74,6 +74,28 @@ def render_event(
     if ev:
         if not _check_condition(ev, state):
             return ""
+        # v2.6.0: pipeline-wrapped events
+        if isinstance(ev, dict) and "pipeline" in ev:
+            # Events store pipeline directly (not via command_assembly lookup)
+            from .entity import EntityState
+            pipeline = ev["pipeline"]
+            lines = []
+            for step in pipeline:
+                op = step.get("op", "text")
+                if op == "range":
+                    channel = step.get("channel", "")
+                    val = state.channels.get(channel, 0)
+                    brackets = step.get("brackets", [])
+                    texts = step.get("texts", [])
+                    for i, (lo, hi) in enumerate(brackets):
+                        if lo <= val < hi and i < len(texts):
+                            lines.append(texts[i])
+                            break
+                elif op == "text":
+                    texts = step.get("texts", [])
+                    if texts:
+                        lines.append(texts[0])
+            return "\n".join(lines)
         tier = _SEVERITY_TIER.get(severity, "intense")
         texts = ev.get("texts", {})
         return texts.get(tier) or texts.get("medium") or texts.get("mild") or ""
@@ -195,17 +217,19 @@ def range_select(
     brackets: list,
     texts: list[str],
     before_state: EntityState | None = None,
+    source: str = "after",
 ) -> str:
     """Select text based on which bracket the channel value falls into.
 
     Args:
         state: EntityState whose channels[channel] is read (current/after values).
         channel: Channel name to read.
-        brackets: List of [lo, hi] pairs (None = no bound).
+        brackets: List of [lo, hi] pairs (None = no bound, half-open [lo,hi)).
         texts: Corresponding texts, len(texts) == len(brackets).
         before_state: Optional snapshot before changes (4.2).
-            When provided, reads the channel value from before_state instead of state,
-            allowing range selection based on pre-change values.
+            Used when source="before" for range selection based on pre-change values.
+        source: Which state to read from: "after" (default, current/modified state)
+            or "before" (pre-modifier snapshot for position-based selection like flip).
 
     Returns:
         The text from the first matching bracket, or "" if no match.
@@ -216,8 +240,11 @@ def range_select(
             texts=["empty", "half", "full"])
         # candy_count=3 → "empty", candy_count=7 → "half", candy_count=15 → "full"
     """
-    source = before_state if before_state is not None else state
-    val = (source.channels or {}).get(channel, 0)
+    if source == "before" and before_state is not None:
+        src = before_state
+    else:
+        src = state
+    val = (src.channels or {}).get(channel, 0)
 
     for i, (lo, hi) in enumerate(brackets):
         if lo is not None and val < lo:
@@ -385,6 +412,10 @@ def render_command_narrative(
     if not pipeline:
         return ""
 
+    # v2.6.0: unwrap {"pipeline": [...]} wrapper format
+    if isinstance(pipeline, dict) and "pipeline" in pipeline:
+        pipeline = pipeline["pipeline"]
+
     lines = []
     for step in pipeline:
         # Plain string → interpolate
@@ -401,7 +432,9 @@ def render_command_narrative(
             ch = step.get("channel", "")
             brackets = step.get("brackets", [])
             texts = step.get("texts", [])
-            text = range_select(state, ch, brackets, texts, before_state=before_state)
+            read_src = step.get("read", "after")
+            text = range_select(state, ch, brackets, texts,
+                                before_state=before_state, source=read_src)
             if text:
                 lines.append(text)
 
@@ -412,14 +445,30 @@ def render_command_narrative(
             texts = step.get("texts", [])
             if not isinstance(ifs, list):
                 ifs = [ifs]
-            # 4.2: evaluate conditions against before_state when available
-            eval_state = before_state if before_state is not None else state
+            # Evaluate conditions against current/after state by default
+            eval_state = state
             for i, cond in enumerate(ifs):
                 if i < len(texts) and _eval_cond(cond, eval_state):
                     parts.append(texts[i])
             line = "\n".join(p for p in parts if p)
             if line:
                 lines.append(line)
+
+        elif op == "flag_check":
+            flag_name = step.get("flag")
+            if flag_name and hasattr(state, 'get_flag'):
+                flag_val = state.get_flag(flag_name)
+            else:
+                flag_val = step.get("default", False)
+            tmap = step.get("texts", step)
+            if flag_val:
+                text = tmap.get("true") or tmap.get("text_true") or tmap.get("pass", "")
+            else:
+                text = tmap.get("false") or tmap.get("text_false") or tmap.get("fail", "")
+            if text:
+                text = interpolate(text, state, before_state=before_state,
+                                   delta_precision=delta_precision, **extra_vars)
+                lines.append(text)
 
         elif op == "rand":
             variants = step.get("variants", [])

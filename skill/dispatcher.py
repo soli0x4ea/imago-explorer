@@ -61,6 +61,7 @@ class CardDispatcher:
         self.ctx = CardRuntimeContext(self.card_path)
         self.state_mgr = StateManager(self.ctx)
         os.makedirs(self.ctx.state_dir, exist_ok=True)
+        self._seen_event_ids: set[str] = set()  # cross-command threshold cooldown
 
         # Command set (auto-load if interaction module enabled)
         self.cmd_set: CommandSet | None = None
@@ -95,7 +96,8 @@ class CardDispatcher:
             result["command"] = cmd.id
 
             # 2a. Meta-commands: status / reset (generic, not card-specific)
-            if cmd.id in ("cmd_status", "cmd_reset", "cmd_end"):
+            if cmd.id in ("cmd_status",):
+                return self._handle_meta(cmd.id, cmd)
                 return self._handle_meta(cmd.id, cmd)
 
             # 2b. Extract intensity from args (e.g. "赐糖 3" → 3)
@@ -109,6 +111,7 @@ class CardDispatcher:
             # 4. Apply effects via DLC's generic execute_command
             entity = self._get_or_create_entity(self._get_primary_entity_id())
             before = dict(entity.channels)
+            before_state = EntityState(entity_id=entity.entity_id, channels=dict(before))
 
             outputs: list[str] = []
             events_fired: list[str] = []
@@ -125,9 +128,13 @@ class CardDispatcher:
                     modifiers_cfg=modifiers_cfg,
                     narratives_cfg=self.ctx.narratives,
                     entity_cfg=entities_cfg.get(entity.entity_id, {}),
+                    before_state=before_state,
                 )
                 if exec_result.success and exec_result.output:
-                    outputs.append(exec_result.output)
+                    # Filter debug noise from state effects
+                    _out = exec_result.output
+                    if not (_out.startswith("flag_set:") or _out.startswith("flag_unset:")):
+                        outputs.append(_out)
                 if not exec_result.success and exec_result.error:
                     events_fired.append(exec_result.error)
 
@@ -135,20 +142,19 @@ class CardDispatcher:
             hook_outputs = self._post_effects_hook(entity, before, cmd, user_input)
             outputs.extend(hook_outputs)
 
-            # 5. Thresholds — check and render events
+            # 5. Thresholds — check and render events (cooldown via self._seen_event_ids from __init__)
             thresholds_raw = self._unwrap_config(self.ctx.thresholds, "thresholds")
-            seen_event_ids: set[str] = set()
             for tev in check_thresholds(entity, thresholds_raw):
-                if tev.event_id in seen_event_ids:
+                if tev.event_id in self._seen_event_ids:
                     continue
                 text = render_event(
                     tev.event_id, self.ctx.narratives, tev.event_type,
-                    entity, before_state=before,
+                    entity, before_state=before_state,
                 )
                 if text:
                     outputs.append(text)
                     events_fired.append(tev.event_id)
-                    seen_event_ids.add(tev.event_id)
+                    self._seen_event_ids.add(tev.event_id)
 
             # 6. Save entity state
             self._save_entity(entity)
@@ -225,22 +231,6 @@ class CardDispatcher:
             result["reply"] = "\n".join(lines) if lines else "(无状态)"
             return result
 
-        if cmd_id in ("cmd_reset", "cmd_end"):
-            entity = self._get_or_create_entity(self._get_primary_entity_id())
-            entities_cfg = self._unwrap_config(self.ctx.entities, "entities")
-            econfig = entities_cfg.get(entity.entity_id, {})
-            # Reset channels to initial values
-            for ch_key, ch_cfg in econfig.get("channels", {}).items():
-                val = ch_cfg.get("initial", ch_cfg.get("default", 0))
-                entity.channels[ch_key] = float(val)
-            # Reset flags
-            for f_key, f_val in econfig.get("flags", {}).items():
-                entity.flags[f_key] = f_val
-            self._save_entity(entity)
-            result["reply"] = "(状态已重置)"
-            return result
-
-        return result
 
     # ── Entity management ─────────────────────────────────────
 

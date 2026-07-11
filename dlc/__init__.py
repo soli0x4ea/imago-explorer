@@ -1,4 +1,4 @@
-"""DLC Protocol v1.0 — Digital Life Card Framework."""
+"""DLC Protocol v2.6.0 — Digital Life Card Framework."""
 
 # P0: Foundation
 from dlc.loader import (

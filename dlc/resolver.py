@@ -1,4 +1,4 @@
-"""DLC Protocol v1.0 — Config Resolver.
+"""DLC Protocol v2.6.0 — Config Resolver.
 
 P0-16: Dynamic config path resolution.
 

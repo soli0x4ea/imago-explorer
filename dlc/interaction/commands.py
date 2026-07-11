@@ -110,6 +110,7 @@ def execute_command(
     modifiers_cfg: dict,
     narratives_cfg: dict,
     entity_cfg: dict | None = None,
+    before_state: EntityState | None = None,
 ) -> CommandResult:
     """Execute a single command effect against the runtime state.
 
@@ -137,13 +138,13 @@ def execute_command(
             # v2.5.0: command-driven narrative assembly
             cmd_id = effect.get("command_id", "")
             extra = effect.get("vars", {})
-            text = render_command_narrative(cmd_id, state, narratives_cfg, **extra)
+            text = render_command_narrative(cmd_id, state, narratives_cfg, before_state=before_state, **extra)
             result.success = bool(text)
             result.output = text
 
         elif etype == "narrative":
             event_id = effect["event_id"]
-            text = render_event(event_id, narratives_cfg, "warning", state)
+            text = render_event(event_id, narratives_cfg, "warning", state, before_state=before_state)
             result.success = bool(text)
             result.output = text
 

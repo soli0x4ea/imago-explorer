@@ -1,4 +1,4 @@
-"""DLC Protocol v1.0 — Packager.
+"""DLC Protocol v2.6.0 — Packager.
 
 P0-27: Directory → .dlc packaging (ZIP)
 P0-28: .dlc → Directory unpacking

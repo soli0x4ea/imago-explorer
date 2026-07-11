@@ -20,7 +20,7 @@ def main():
         for name in sorted(os.listdir(cards_dir)):
             p = os.path.join(cards_dir, name)
             if os.path.isdir(p) and os.path.isfile(os.path.join(p, "card.json")):
-                card_path = os.path.join("cards", name)
+                card_path = p  # use absolute path
                 break
     if not card_path:
         print("No card found")

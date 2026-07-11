@@ -1,4 +1,4 @@
-"""DLC Protocol v1.0 — Shared Constants.
+"""DLC Protocol v2.6.0 — Shared Constants.
 
 Single source of truth for module definitions used across
 loader.py, resolver.py, and context.py.

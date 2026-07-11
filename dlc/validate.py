@@ -1,4 +1,4 @@
-"""DLC Protocol v1.0 — Schema Validator.
+"""DLC Protocol v2.6.0 — Schema Validator.
 
 P0-15: jsonschema-based validation engine.
 

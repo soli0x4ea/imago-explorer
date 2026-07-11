@@ -1,4 +1,4 @@
-"""DLC Protocol v1.0 — Persistence Layer.
+"""DLC Protocol v2.6.0 — Persistence Layer.
 
 P0-23: StateManager — card-scoped state read/write/delete.
 P0-24: export_state() — full state export to .dlc-state format.

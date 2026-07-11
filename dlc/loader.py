@@ -1,4 +1,4 @@
-"""DLC Protocol v1.0 — Card Loader.
+"""DLC Protocol v2.6.0 — Card Loader.
 
 P0-01: card.json parser
 P0-02: protocol version compatibility check
@@ -79,7 +79,7 @@ def load_card(path: str) -> CardConfig:
             f"Missing required fields in {path}: {missing}"
         )
 
-    version_error = check_version("1.0.0", raw["protocol_version"])
+    version_error = check_version("2.6.0", raw["protocol_version"])
     if version_error:
         raise CardLoadError(
             f"Protocol version mismatch in {path}: {version_error}"
