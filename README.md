@@ -4,7 +4,7 @@
 
 ## 🎯 在 TRAE 中体验
 
-[📦 下载 TRAE 专用包](https://github.com/soli0x4ea/imago-explorer/releases/download/v1.0.0-trae/tarot-diviner.zip)
+[📦 下载 TRAE 专用包](https://github.com/soli0x4ea/imago-explorer/releases/download/v1.0.9-trae/imago-explorer-v1.0.9-trae.zip)
 
 > 解压后直接导入 TRAE 平台即可使用。包含完整 skill 包 + DLC v2.6.0 引擎。
 
